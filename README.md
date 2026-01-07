@@ -82,7 +82,7 @@ Try these queries to see the memory system in action:
 ## Project Structure
 
 ```
-adk-surrealdb-memory/
+surrealdb-agentic-compose/
 ├── compose.yaml              # Main Docker Compose configuration
 ├── compose.openai.yaml       # OpenAI model override
 ├── compose.offload.yaml      # Docker Offload configuration
@@ -112,34 +112,9 @@ Tracks which agents collaborated on which topics, enabling insight into agent te
 ### 4. Time-Series Analysis
 All activities are timestamped, allowing analysis of how agent knowledge evolves.
 
-## Troubleshooting
 
-### SurrealDB Connection Issues
-```bash
-# Check if SurrealDB is running
-docker compose ps surrealdb
 
-# View SurrealDB logs
-docker compose logs surrealdb
-```
 
-### Model Runner Issues
-```bash
-# Check GPU availability
-docker compose logs models
-
-# Verify model download
-docker compose exec models ls -la /root/.cache/huggingface
-```
-
-### Reset Database
-```bash
-# Stop and remove volumes
-docker compose down -v
-
-# Restart
-docker compose up --build
-```
 
 ## License
 
