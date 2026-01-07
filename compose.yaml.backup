@@ -1,0 +1,120 @@
+services:
+  # SurrealDB Database - Multi-model database for agent memory
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    container_name: surrealdb-agents
+    ports:
+      - "8000:8000"
+    volumes:
+      - surrealdb-data:/data
+      - ./init.surql:/init.surql
+    command: 
+      - start
+      - --user=root
+      - --pass=root
+      - file:/data/db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agent-network
+
+  # Surrealist - Web UI for SurrealDB (optional)
+  surrealist:
+    image: surrealdb/surrealist:latest
+    container_name: surrealist-ui
+    ports:
+      - "8081:80"
+    depends_on:
+      - surrealdb
+    networks:
+      - agent-network
+
+  # MCP Gateway - For DuckDuckGo search
+  mcp-gateway:
+    image: docker/mcp-gateway:latest
+    container_name: mcp-gateway-duckduckgo
+    ports:
+      - "3000:3000"
+    env_file:
+      - .mcp.env
+    command:
+      - --servers=duckduckgo
+      - --port=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agent-network
+
+  # Docker Model Runner - Local LLM inference
+  models:
+    image: docker/model-runner:latest
+    container_name: model-runner
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - MODEL_CONFIG={"models":{"qwen3":{"model":"ai/qwen3:latest"},"embeddings":{"model":"sentence-transformers/all-MiniLM-L6-v2"}}}
+    volumes:
+      - model-cache:/root/.cache/huggingface
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - agent-network
+
+  # Multi-Agent Application with SurrealDB Memory
+  agent-app:
+    build: .
+    container_name: adk-agent-app
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+      mcp-gateway:
+        condition: service_healthy
+      models:
+        condition: service_healthy
+    environment:
+      # SurrealDB Configuration
+      - SURREALDB_URL=ws://surrealdb:8000/rpc
+      - SURREALDB_NS=agents
+      - SURREALDB_DB=memory
+      - SURREALDB_USER=root
+      - SURREALDB_PASS=root
+      # Model Runner Configuration
+      - MODEL_RUNNER_URL=http://models:8080
+      # MCP Gateway Configuration
+      - MCP_GATEWAY_URL=http://mcp-gateway:3000
+      # Application Configuration
+      - USE_OPENAI=false
+      - LOG_LEVEL=INFO
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app/src
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+volumes:
+  surrealdb-data:
+    driver: local
+  model-cache:
+    driver: local
+
+networks:
+  agent-network:
+    driver: bridge

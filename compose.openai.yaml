@@ -1,0 +1,18 @@
+# Override configuration to use OpenAI models instead of local models
+
+services:
+  # Remove local model runner when using OpenAI
+  models:
+    deploy:
+      replicas: 0
+
+  agent-app:
+    environment:
+      - USE_OPENAI=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    secrets:
+      - openai-api-key
+
+secrets:
+  openai-api-key:
+    file: ./secret.openai-api-key

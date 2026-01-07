@@ -1,0 +1,12 @@
+# Override configuration to use Docker Offload for remote GPU
+
+services:
+  models:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+    x-docker-offload:
+      enabled: true
+      cloud-provider: aws
+      instance-type: g4dn.xlarge

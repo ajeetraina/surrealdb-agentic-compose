@@ -1,0 +1,66 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    container_name: surrealdb-agents
+    ports:
+      - "8000:8000"
+    command: start --log info --user root --pass root memory
+    networks:
+      - agent-network
+
+  surrealist:
+    image: surrealdb/surrealist:latest
+    container_name: surrealist-ui
+    ports:
+      - "8081:80"
+    depends_on:
+      - surrealdb
+    networks:
+      - agent-network
+
+  mcp-gateway:
+    image: docker/mcp-gateway:latest
+    container_name: mcp-gateway
+    use_api_socket: true
+    ports:
+      - "3000:3000"
+    command:
+      - --transport=streaming
+      - --servers=duckduckgo
+    networks:
+      - agent-network
+
+  agent-app:
+    build: .
+    container_name: adk-agent-app
+    depends_on:
+      - surrealdb
+      - mcp-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SURREALDB_URL=ws://surrealdb:8000/rpc
+      - SURREALDB_NS=agents
+      - SURREALDB_DB=memory
+      - SURREALDB_USER=root
+      - SURREALDB_PASS=root
+      - MCPGATEWAY_URL=http://mcp-gateway:8811
+      - USE_OPENAI=false
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./src:/app/src
+    networks:
+      - agent-network
+    models:
+      qwen3:
+        endpoint_var: MODEL_RUNNER_URL
+        model_var: MODEL_RUNNER_MODEL
+
+models:
+  qwen3:
+    model: ai/qwen3:latest
+    context_size: 15000
+
+networks:
+  agent-network:
+    driver: bridge
