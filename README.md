@@ -285,7 +285,7 @@ graph LR
 
 1. **Navigate to this directory**
    ```bash
-   cd adk-surrealdb-memory
+   cd surrealdb-agentic-compose
    ```
 
 2. **Create MCP environment file**
