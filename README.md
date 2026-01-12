@@ -12,6 +12,14 @@ This version adds **LangChain Multi-Model RAG** capabilities inspired by the [Su
 - **🏷️ Automatic Keyword Extraction**: LLM-powered keyword inference from agent outputs
 - **📊 Multi-Model Storage**: Leverages SurrealDB's document, graph, and vector capabilities
 
+## Why SurrealDB for AI Agents
+
+- Agents need to remember conversations, context, and state
+- Graph Relationships for Multi-Agent Systems
+- Agents can subscribe to changes (WebSocket support)
+- When one agent updates data, others are notified instantly.
+
+
 ## 🏗️ Architecture
 
 ```
